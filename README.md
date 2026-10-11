@@ -1,38 +1,41 @@
 # Analytics Agent
 
-An AI analytics assistant that answers business questions using a sample e-commerce database. Ask a question in the Jupyter notebook and the agent can inspect the database schema, run read-only SQL, and review its answer against the query results.
+An AI assistant for asking questions about sample e-commerce data. It uses an LLM to plan analysis, query PostgreSQL with read-only SQL, and check its answer against the query results.
 
-## What it demonstrates
+## Current project status
 
-- A tool-using agent workflow built with **LangGraph** and **LangChain**
-- Local language model integration through **Ollama**
-- PostgreSQL analytics with SQL safety checks, a query timeout, and a result limit
-- An evaluation step that checks whether an answer is supported by the data
-- Reproducible sample business data for exploring sales trends
+This is a working local prototype with both a Jupyter example and a FastAPI interface. The API can create sessions, answer questions in a session, and return saved conversation messages. Session and message data are stored in PostgreSQL.
+
+## Highlights
+
+- **Agent workflow:** LangGraph, LangChain tools, and a reflection step
+- **Local model:** Ollama, configurable with `MODEL_NAME`
+- **Database:** PostgreSQL with SQL checks, a 3-second query timeout, and a 500-row result limit
+- **API:** FastAPI endpoints for health checks, session creation, questions, and conversation history
+- **Sample data:** deterministic e-commerce data for exploring business questions
+- **RAG groundwork:** the agent receives database schema context to guide SQL generation, and the database defines a pgvector-ready `knowledge_chunks` table. Document ingestion, embedding generation, and vector retrieval are planned, but not implemented yet.
 
 ## Tech stack
 
-Python · LangGraph · LangChain · Ollama · PostgreSQL · Docker Compose · Jupyter
+Python · FastAPI · LangGraph · LangChain · Ollama · PostgreSQL · Docker Compose
 
-## Get started
+## Setup
 
 ### Requirements
 
 - Python 3.11 or newer
 - Docker Compose
-- [Ollama](https://ollama.com/) with the model you plan to use
+- [Ollama](https://ollama.com/) with a model available locally
 
-### Setup
+### Install and start the database
 
-1. Create your local environment file and configure matching database credentials:
+1. Copy the environment template and set `DB_URL`, `POSTGRES_PASSWORD`, and `MODEL_NAME`. The PostgreSQL password in `DB_URL` must match `POSTGRES_PASSWORD`.
 
    ```bash
    cp .env.example .env
    ```
 
-   Set `POSTGRES_PASSWORD` and use the same password in `DB_URL`. The example model is `qwen2.5:7b-instruct`; set `MODEL_NAME` to a model available in your Ollama installation.
-
-2. Start PostgreSQL and install the Python dependencies:
+2. Start PostgreSQL and install dependencies:
 
    ```bash
    docker compose up -d
@@ -41,38 +44,59 @@ Python · LangGraph · LangChain · Ollama · PostgreSQL · Docker Compose · Ju
    pip install -r requirements.txt
    ```
 
-3. Create the sample data:
+3. Populate the database with sample data:
 
    ```bash
    python scripts/seed_business_data.py
    ```
 
-   **This resets the sample business tables before inserting data.**
+   The seed script clears and recreates the sample business data.
 
-4. Start Jupyter from the project root, open `agent.ipynb`, and run its cells:
+## Run the API
 
-   ```bash
-   jupyter notebook
-   ```
+From the project root, start the development server:
 
-The notebook includes an example question comparing product category sales from June to July 2026. Change `user_question` to explore other questions.
+```bash
+uvicorn src.api.app:app --reload
+```
 
-## How it works
+Open `http://127.0.0.1:8000/docs` for interactive API documentation.
 
-The agent receives a question, gets the database schema and guidance, and uses SQL tools when it needs data. A reflection step checks the candidate answer against the question and query history; if needed, the agent can revise its analysis.
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Check that the API is running |
+| `POST` | `/api/sessions` | Create a conversation and receive its UUID |
+| `POST` | `/api/sessions/{session_id}/messages` | Ask a question in that conversation |
+| `GET` | `/api/sessions/{session_id}/messages` | Retrieve saved conversation messages |
 
-SQL execution accepts read-only `SELECT` and `WITH` queries, limits execution time to 3 seconds, and returns at most 500 rows.
+Send questions as JSON, for example:
+
+```json
+{"message": "Which product category had the highest sales in 2026?"}
+```
+
+## Use the notebook
+
+Start Jupyter from the project root, open `agent.ipynb`, and run its cells:
+
+```bash
+jupyter notebook
+```
+
+The notebook includes an example sales comparison. Change `user_question` to explore other questions.
 
 ## Project structure
 
 ```text
 src/
-  agent/       Agent graph, prompts, model setup, and workflow nodes
-  database/   PostgreSQL connection, SQL guardrails, and query executor
-  services/   Agent service interface
-  tools/      SQL execution and database schema context tools
-database/     PostgreSQL schema
-scripts/      Sample business data generator
-agent.ipynb   Example notebook
-compose.yaml  Local PostgreSQL service
+  agent/        LangGraph workflow, model setup, prompts, and nodes
+  api/          FastAPI application, routes, and request/response schemas
+  database/     PostgreSQL connection, SQL guardrails, and query executor
+  persistence/  Session and message repositories
+  services/     Agent orchestration and conversation handling
+  tools/        SQL execution and database schema context (RAG groundwork)
+database/       PostgreSQL schema
+scripts/        Sample business data generator
+agent.ipynb     Notebook example
+compose.yaml    Local PostgreSQL service
 ```
