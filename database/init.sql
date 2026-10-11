@@ -80,3 +80,38 @@ CREATE TABLE knowledge_chunks (
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+-- =========================================
+-- Persistence
+-- =========================================
+
+
+CREATE SCHEMA IF NOT EXISTS app;
+
+CREATE TABLE app.sessions (
+    id UUID PRIMARY KEY,
+    title TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+CREATE TABLE app.messages (
+    id UUID PRIMARY KEY,
+
+    session_id UUID NOT NULL
+        REFERENCES app.sessions(id)
+        ON DELETE CASCADE,
+
+    role VARCHAR(20) NOT NULL
+        CHECK (role IN ('user', 'assistant')),
+
+    content TEXT NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_messages_session_created
+ON app.messages(session_id, created_at);

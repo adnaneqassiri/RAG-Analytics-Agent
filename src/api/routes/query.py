@@ -7,19 +7,23 @@ from src.app import agent_service
 router = APIRouter()
 
 
+from uuid import UUID
+
 @router.post(
-    "/query",
+    "/sessions/{session_id}/messages",
     response_model=QueryResponse
 )
-def query_agent(request: QueryRequest):
+def query_agent(
+    session_id: UUID,
+    request: QueryRequest
+):
 
     result = agent_service.run(
-        question=request.message, session_id=''
+        question=request.message,
+        session_id=session_id
     )
-    answer = result["candidate_answer"]
-    sql_history = result['sql_history']
 
     return QueryResponse(
-        answer=answer,
-        sql_history= sql_history
+        answer=result["answer"],
+        sql_history=result.get("sql_history", [])
     )

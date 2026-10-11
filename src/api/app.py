@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from src.api.routes.query import router as query_router
+from src.api.routes.sessions import router as sessions_router
 
 
 app = FastAPI(
@@ -18,3 +19,9 @@ def health():
     return {
         "status": "ok"
     }
+
+
+app.include_router(
+    sessions_router,
+    prefix="/api"
+)
