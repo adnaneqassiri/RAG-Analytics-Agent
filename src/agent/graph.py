@@ -21,7 +21,7 @@ def condition_reflection_node(state: AgentState) -> str:
 def build_graph(llm, tools):
     agent_node = create_agent_node(llm, tools)
     reflection_node = create_reflection_node(llm)
-    tools_node = create_tools_node()
+    tools_node = create_tools_node(tools)
     
     graph = StateGraph(AgentState)
     graph.add_node('agent_node', agent_node)

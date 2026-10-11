@@ -1,9 +1,6 @@
 from langchain_core.messages import SystemMessage
 from src.agent.state import AgentState
 from src.agent.prompts.agent import SYSTEM_PROMPT
-from src.tools.tools import tools
-from src.agent.llm import llm
-
 
 
 def create_agent_node(llm, tools): 

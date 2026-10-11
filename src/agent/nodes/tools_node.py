@@ -1,42 +1,51 @@
 from langchain_core.messages import ToolMessage
 from src.agent.state import AgentState
-from src.tools.tools import get_db_context, execute_sql
 
-def create_tools_node():
-    
+
+def create_tools_node(tools):
+
+    tool_map = {
+        tool.name: tool
+        for tool in tools
+    }
+
     def tools_node(state: AgentState) -> dict:
+
         last_message = state["messages"][-1]
+
         messages = []
         sql_history = []
 
         for tool_call in last_message.tool_calls:
+
             tool_name = tool_call["name"]
             args = tool_call["args"]
-            if tool_name == "execute_sql":
-                query = args["query"]
-                result = execute_sql.invoke({"query": query})
-                sql_history.append({
-                    "query": query,
-                    "result": result
-                })            
-                messages.append(
-                    ToolMessage(
-                        content=str(result),
-                        tool_call_id=tool_call["id"]
-                    )
+
+            if tool_name not in tool_map:
+                raise ValueError(
+                    f"Unknown tool: {tool_name}"
                 )
 
-            elif tool_name == "get_db_context":
-                result = get_db_context.invoke(args)
-                messages.append(
-                    ToolMessage(
-                        content=str(result),
-                        tool_call_id=tool_call["id"]
-                    )
+            tool = tool_map[tool_name]
+
+            result = tool.invoke(args)
+
+            if tool_name == "execute_sql":
+                sql_history.append({
+                    "query": args["query"],
+                    "result": result
+                })
+
+            messages.append(
+                ToolMessage(
+                    content=str(result),
+                    tool_call_id=tool_call["id"]
                 )
+            )
+
         return {
             "messages": messages,
             "sql_history": sql_history
         }
-        
+
     return tools_node
