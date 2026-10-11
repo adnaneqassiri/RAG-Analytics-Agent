@@ -16,10 +16,10 @@ def query_agent(request: QueryRequest):
     result = agent_service.run(
         question=request.message, session_id=''
     )
-    final_msg = result['messages'][-1]
+    answer = result["candidate_answer"]
     sql_history = result['sql_history']
 
     return QueryResponse(
-        answer=final_msg.content,
+        answer=answer,
         sql_history= sql_history
     )
