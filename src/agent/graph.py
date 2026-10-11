@@ -1,8 +1,8 @@
 from langgraph.graph import StateGraph, END, START
 from src.agent.state import AgentState
-from src.agent.nodes.agent_node import agent_node
-from src.agent.nodes.tools_node import tools_node
-from src.agent.nodes.reflection_node import reflection_node
+from src.agent.nodes.agent_node import create_agent_node
+from src.agent.nodes.tools_node import create_tools_node
+from src.agent.nodes.reflection_node import create_reflection_node
 
 def condition_tools_node(state: AgentState) -> str:
     last_message = state['messages'][-1]
@@ -13,10 +13,16 @@ def condition_tools_node(state: AgentState) -> str:
 def condition_reflection_node(state: AgentState) -> str:
     if state['approved']:
         return "passed"
+    if state['iterations'] >= 8:
+        # Apres on peut ajouter une failure node
+        return 'passed'
     return 'return_to_agent'
 
-
-def build_graph():
+def build_graph(llm, tools):
+    agent_node = create_agent_node(llm, tools)
+    reflection_node = create_reflection_node(llm)
+    tools_node = create_tools_node()
+    
     graph = StateGraph(AgentState)
     graph.add_node('agent_node', agent_node)
     graph.add_node('tools_node', tools_node)

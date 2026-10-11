@@ -1,45 +1,78 @@
 # Analytics Agent
 
-A prototype analytics agent that uses LangGraph, Ollama, and PostgreSQL to answer questions about a sample e-commerce database. The agent can inspect the schema, run read-only SQL queries, and evaluate whether its answer is supported by query results.
+An AI analytics assistant that answers business questions using a sample e-commerce database. Ask a question in the Jupyter notebook and the agent can inspect the database schema, run read-only SQL, and review its answer against the query results.
 
-## Requirements
+## What it demonstrates
+
+- A tool-using agent workflow built with **LangGraph** and **LangChain**
+- Local language model integration through **Ollama**
+- PostgreSQL analytics with SQL safety checks, a query timeout, and a result limit
+- An evaluation step that checks whether an answer is supported by the data
+- Reproducible sample business data for exploring sales trends
+
+## Tech stack
+
+Python · LangGraph · LangChain · Ollama · PostgreSQL · Docker Compose · Jupyter
+
+## Get started
+
+### Requirements
 
 - Python 3.11 or newer
 - Docker Compose
-- Ollama, with the model configured by `MODEL_NAME` available locally
+- [Ollama](https://ollama.com/) with the model you plan to use
 
-## Setup
+### Setup
 
-1. Copy `.env.example` to `.env`. Set `DB_URL`, `MODEL_NAME`, and `POSTGRES_PASSWORD` for your local setup. The password in `POSTGRES_PASSWORD` must match the password in `DB_URL`. `.env` is ignored by Git.
-2. Start PostgreSQL:
+1. Create your local environment file and configure matching database credentials:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Set `POSTGRES_PASSWORD` and use the same password in `DB_URL`. The example model is `qwen2.5:7b-instruct`; set `MODEL_NAME` to a model available in your Ollama installation.
+
+2. Start PostgreSQL and install the Python dependencies:
 
    ```bash
    docker compose up -d
-   ```
-
-   The example uses `analytics123` as a development-only database password. Set your own `POSTGRES_PASSWORD` in `.env` and use the same password in `DB_URL` for local use. Do not use the example password for a public or production database.
-3. Install Python dependencies:
-
-   ```bash
    python -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
-4. Seed the database with sample data:
+
+3. Create the sample data:
 
    ```bash
    python scripts/seed_business_data.py
    ```
-5. Make sure Ollama is running and the model named by `MODEL_NAME` is available. The example uses `qwen2.5:7b-instruct`.
-6. Open `agent.ipynb` in Jupyter and run its cells to use the agent.
 
-The seed script clears existing rows in the sample business tables before inserting new data.
+   **This resets the sample business tables before inserting data.**
 
-## Project files
+4. Start Jupyter from the project root, open `agent.ipynb`, and run its cells:
 
-- `src/graph.py`: agent and reflection workflow
-- `src/tools.py`: database context and read-only SQL tool
-- `src/llm.py`: Ollama model configuration
-- `database/init.sql`: PostgreSQL schema
-- `scripts/seed_business_data.py`: deterministic sample-data generator
-- `agent.ipynb`: example invocation
+   ```bash
+   jupyter notebook
+   ```
+
+The notebook includes an example question comparing product category sales from June to July 2026. Change `user_question` to explore other questions.
+
+## How it works
+
+The agent receives a question, gets the database schema and guidance, and uses SQL tools when it needs data. A reflection step checks the candidate answer against the question and query history; if needed, the agent can revise its analysis.
+
+SQL execution accepts read-only `SELECT` and `WITH` queries, limits execution time to 3 seconds, and returns at most 500 rows.
+
+## Project structure
+
+```text
+src/
+  agent/       Agent graph, prompts, model setup, and workflow nodes
+  database/   PostgreSQL connection, SQL guardrails, and query executor
+  services/   Agent service interface
+  tools/      SQL execution and database schema context tools
+database/     PostgreSQL schema
+scripts/      Sample business data generator
+agent.ipynb   Example notebook
+compose.yaml  Local PostgreSQL service
+```
