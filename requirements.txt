@@ -1,0 +1,9 @@
+faker
+langchain-core
+langchain-ollama
+langgraph
+jupyter
+pandas
+psycopg[binary]
+pydantic
+python-dotenv
