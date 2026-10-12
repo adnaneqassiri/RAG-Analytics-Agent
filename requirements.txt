@@ -7,3 +7,4 @@ pandas
 psycopg[binary]
 pydantic
 python-dotenv
+streamlit

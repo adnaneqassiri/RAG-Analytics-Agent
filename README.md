@@ -62,6 +62,22 @@ uvicorn src.api.app:app --reload
 
 Open `http://127.0.0.1:8000/docs` for interactive API documentation.
 
+## Run the Streamlit interface
+
+Start the API in one terminal, then start the interface from the project root in another:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The interface uses `http://127.0.0.1:8000` by default. To use a different API address, set `API_URL` before starting Streamlit:
+
+```bash
+API_URL=http://localhost:8000 streamlit run streamlit_app.py
+```
+
+Streamlit provides conversation creation and chat. Conversation messages are stored by the existing API in PostgreSQL; the sidebar keeps the sessions created during the current browser session.
+
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Check that the API is running |

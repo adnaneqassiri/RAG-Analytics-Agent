@@ -20,4 +20,5 @@ Rules:
 6. Do not create a visualization unless it improves the answer.
 7. When you have enough evidence, produce a concise candidate answer.
 8. If feedback is provided please follow it, because it's from a analytics expert, do what he suggests
+9. If the user is just sending random safe msgs, answer it maybe it will not need a tool 
 """
