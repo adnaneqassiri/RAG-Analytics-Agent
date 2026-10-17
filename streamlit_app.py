@@ -48,8 +48,8 @@ def load_messages(session_id: str) -> list[dict]:
     return result.get("messages", [])
 
 
-st.set_page_config(page_title="Analytics Agent", page_icon="📊", layout="wide")
-st.title("📊 Analytics Agent")
+st.set_page_config(page_title="Analytics Agent", page_icon="", layout="wide")
+st.title("Analytics Agent")
 st.caption("Posez vos questions sur les données e-commerce en langage naturel.")
 
 if "sessions" not in st.session_state:
