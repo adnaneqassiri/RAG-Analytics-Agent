@@ -1,9 +1,9 @@
-from src.database.connection import get_connection
+import psycopg
+
 from src.database.guardrails import validate_sql
 
 
 class SQLExecutor:
-
     def __init__(
         self,
         db_url: str,
@@ -14,55 +14,47 @@ class SQLExecutor:
         self.timeout_ms = timeout_ms
         self.max_rows = max_rows
 
-
-    def execute(self, query: str):
-
+    def execute(self, query: str) -> dict:
+        # 1. Validate before touching PostgreSQL
         valid, reason = validate_sql(query)
 
         if not valid:
-            return {
-                "success": False,
-                "error": reason,
-            }
+            raise ValueError(
+                f"Query rejected by SQL guardrails: {reason}"
+            )
 
-        try:
+        # 2. Execute inside a read-only transaction
+        with psycopg.connect(self.db_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SET TRANSACTION READ ONLY"
+                )
 
-            with get_connection(self.db_url) as conn:
+                cur.execute(
+                    f"SET LOCAL statement_timeout = {int(self.timeout_ms)}"
+                )
 
-                with conn.cursor() as cursor:
+                cur.execute(query)
 
-                    cursor.execute(
-                        "SET TRANSACTION READ ONLY"
-                    )
+                columns = [
+                    description.name
+                    for description in cur.description
+                ]
 
-                    cursor.execute(
-                        f"SET LOCAL statement_timeout = {self.timeout_ms}"
-                    )
+                # Fetch one extra row to detect truncation
+                rows = cur.fetchmany(
+                    self.max_rows + 1
+                )
 
-                    cursor.execute(query)
+                truncated = (
+                    len(rows) > self.max_rows
+                )
 
-                    rows = cursor.fetchmany(
-                        self.max_rows
-                    )
+                rows = rows[: self.max_rows]
 
-                    columns = [
-                        description.name
-                        for description in cursor.description
-                    ]
-
-                    data = [
-                        dict(zip(columns, row))
-                        for row in rows
-                    ]
-
-                    return {
-                        "success": True,
-                        "data": data,
-                    }
-
-        except Exception as e:
-
-            return {
-                "success": False,
-                "error": str(e),
-            }
+        return {
+            "columns": columns,
+            "rows": rows,
+            "row_count": len(rows),
+            "truncated": truncated,
+        }
